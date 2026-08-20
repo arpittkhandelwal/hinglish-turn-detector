@@ -1,0 +1,602 @@
+[
+  {
+    "idx": 0,
+    "filename": "hing_000_true.wav",
+    "text": "Mera order kal deliver ho jayega",
+    "language": "hi",
+    "description": "order delivery complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 1,
+    "filename": "hing_001_true.wav",
+    "text": "Main kal online payment kar doonga",
+    "language": "hi",
+    "description": "payment intent complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 2,
+    "filename": "hing_002_true.wav",
+    "text": "Shiprocket se shipment track karo",
+    "language": "hi",
+    "description": "track shipment complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 3,
+    "filename": "hing_003_true.wav",
+    "text": "Mujhe refund chahiye please",
+    "language": "hi",
+    "description": "refund request complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 4,
+    "filename": "hing_004_true.wav",
+    "text": "Order cancel kar do",
+    "language": "hi",
+    "description": "cancel request complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 5,
+    "filename": "hing_005_true.wav",
+    "text": "Address update kar dena",
+    "language": "hi",
+    "description": "address update request",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 6,
+    "filename": "hing_006_true.wav",
+    "text": "Meri complaint register karo",
+    "language": "hi",
+    "description": "complaint complete sentence",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 7,
+    "filename": "hing_007_true.wav",
+    "text": "Package damage ho gaya hai",
+    "language": "hi",
+    "description": "damage report complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 8,
+    "filename": "hing_008_true.wav",
+    "text": "Delivery partner ka number do",
+    "language": "hi",
+    "description": "contact request complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 9,
+    "filename": "hing_009_true.wav",
+    "text": "Cod available hai is order mein",
+    "language": "hi",
+    "description": "COD query answered",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 10,
+    "filename": "hing_010_true.wav",
+    "text": "Tracking ID share karo mere saath",
+    "language": "hi",
+    "description": "tracking request",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 11,
+    "filename": "hing_011_true.wav",
+    "text": "Return policy kya hai Shiprocket ki",
+    "language": "hi",
+    "description": "policy question complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 12,
+    "filename": "hing_012_true.wav",
+    "text": "Mera account verify nahi ho raha",
+    "language": "hi",
+    "description": "verification issue",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 13,
+    "filename": "hing_013_true.wav",
+    "text": "Pincode service nahi hai yahan",
+    "language": "hi",
+    "description": "service unavailability",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 14,
+    "filename": "hing_014_true.wav",
+    "text": "Estimated delivery kab hai",
+    "language": "hi",
+    "description": "ETA query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 15,
+    "filename": "hing_015_true.wav",
+    "text": "Main complaint file karna chahta hoon",
+    "language": "hi",
+    "description": "complaint intent",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 16,
+    "filename": "hing_016_true.wav",
+    "text": "Invoice download kaise karte hain",
+    "language": "hi",
+    "description": "invoice query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 17,
+    "filename": "hing_017_true.wav",
+    "text": "International shipping available hai",
+    "language": "hi",
+    "description": "intl shipping query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 18,
+    "filename": "hing_018_true.wav",
+    "text": "Weight mismatch issue hai mera",
+    "language": "hi",
+    "description": "weight issue complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 19,
+    "filename": "hing_019_true.wav",
+    "text": "Bulk order discount milega kya",
+    "language": "hi",
+    "description": "bulk discount query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 20,
+    "filename": "hing_020_true.wav",
+    "text": "Support team se baat karni hai",
+    "language": "hi",
+    "description": "support escalation",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 21,
+    "filename": "hing_021_true.wav",
+    "text": "Order already shipped ho gaya",
+    "language": "hi",
+    "description": "status update complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 22,
+    "filename": "hing_022_true.wav",
+    "text": "Warehouse se pickup kab hoga",
+    "language": "hi",
+    "description": "pickup query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 23,
+    "filename": "hing_023_true.wav",
+    "text": "RTO charge kyun laga mujhe",
+    "language": "hi",
+    "description": "RTO charge query",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 24,
+    "filename": "hing_024_true.wav",
+    "text": "Mujhe naya label chahiye",
+    "language": "hi",
+    "description": "label request",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 25,
+    "filename": "hing_025_true.wav",
+    "text": "Seller account suspend ho gaya",
+    "language": "hi",
+    "description": "account issue",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 26,
+    "filename": "hing_026_true.wav",
+    "text": "COD amount credit ho gaya account mein",
+    "language": "hi",
+    "description": "COD credit confirmed",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 27,
+    "filename": "hing_027_true.wav",
+    "text": "API integration mein issue aa raha hai",
+    "language": "hi",
+    "description": "API issue complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 28,
+    "filename": "hing_028_true.wav",
+    "text": "Dashboard login nahi ho raha",
+    "language": "hi",
+    "description": "login issue complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 29,
+    "filename": "hing_029_true.wav",
+    "text": "Main satisfied hoon service se",
+    "language": "hi",
+    "description": "satisfaction complete",
+    "label": 1,
+    "endpoint_bool": true,
+    "synthetic": true
+  },
+  {
+    "idx": 30,
+    "filename": "hing_030_false.wav",
+    "text": "Matlab woh jo order tha na",
+    "language": "hi",
+    "description": "trailing 'na' filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 31,
+    "filename": "hing_031_false.wav",
+    "text": "Toh basically acha",
+    "language": "hi",
+    "description": "toh/acha filler only",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 32,
+    "filename": "hing_032_false.wav",
+    "text": "Haan so ek second",
+    "language": "hi",
+    "description": "haan-so filler pause",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 33,
+    "filename": "hing_033_false.wav",
+    "text": "Woh kya hai na actually",
+    "language": "hi",
+    "description": "trailing 'na' with actually",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 34,
+    "filename": "hing_034_false.wav",
+    "text": "Matlab delivery wali baat kar raha tha",
+    "language": "hi",
+    "description": "mid-thought delivery",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 35,
+    "filename": "hing_035_false.wav",
+    "text": "Toh main bol raha tha ki",
+    "language": "hi",
+    "description": "toh main trailing ki",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 36,
+    "filename": "hing_036_false.wav",
+    "text": "Acha toh",
+    "language": "hi",
+    "description": "short acha-toh filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 37,
+    "filename": "hing_037_false.wav",
+    "text": "Haan matlab",
+    "language": "hi",
+    "description": "haan matlab filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 38,
+    "filename": "hing_038_false.wav",
+    "text": "Woh ek order tha na mera",
+    "language": "hi",
+    "description": "tha-na trailing",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 39,
+    "filename": "hing_039_false.wav",
+    "text": "Bas woh issue jo hai",
+    "language": "hi",
+    "description": "bas woh trailing",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 40,
+    "filename": "hing_040_false.wav",
+    "text": "Basically acha actually dekho",
+    "language": "hi",
+    "description": "multiple fillers",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 41,
+    "filename": "hing_041_false.wav",
+    "text": "Matlab woh issue basically",
+    "language": "hi",
+    "description": "matlab basically",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 42,
+    "filename": "hing_042_false.wav",
+    "text": "Toh tracking wala page",
+    "language": "hi",
+    "description": "incomplete trailing",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 43,
+    "filename": "hing_043_false.wav",
+    "text": "Acha woh delivery partner",
+    "language": "hi",
+    "description": "acha incomplete",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 44,
+    "filename": "hing_044_false.wav",
+    "text": "Haan toh woh jo tha na",
+    "language": "hi",
+    "description": "haan toh tha na",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 45,
+    "filename": "hing_045_false.wav",
+    "text": "Main soch raha tha ki",
+    "language": "hi",
+    "description": "soch raha trailing ki",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 46,
+    "filename": "hing_046_false.wav",
+    "text": "Woh actually matlab",
+    "language": "hi",
+    "description": "woh actually matlab",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 47,
+    "filename": "hing_047_false.wav",
+    "text": "Toh acha bhai woh order",
+    "language": "hi",
+    "description": "toh acha bhai",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 48,
+    "filename": "hing_048_false.wav",
+    "text": "Matlab basically acha",
+    "language": "hi",
+    "description": "multiple filler chain",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 49,
+    "filename": "hing_049_false.wav",
+    "text": "Haan woh package wala issue na",
+    "language": "hi",
+    "description": "woh issue na",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 50,
+    "filename": "hing_050_false.wav",
+    "text": "So basically delivery ka issue",
+    "language": "hi",
+    "description": "so basically trailing",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 51,
+    "filename": "hing_051_false.wav",
+    "text": "Acha toh woh jo",
+    "language": "hi",
+    "description": "acha toh woh incomplete",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 52,
+    "filename": "hing_052_false.wav",
+    "text": "Haan haan acha",
+    "language": "hi",
+    "description": "haan haan filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 53,
+    "filename": "hing_053_false.wav",
+    "text": "Woh ek second actually",
+    "language": "hi",
+    "description": "trailing actually",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 54,
+    "filename": "hing_054_false.wav",
+    "text": "Matlab",
+    "language": "hi",
+    "description": "single matlab filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 55,
+    "filename": "hing_055_false.wav",
+    "text": "Toh",
+    "language": "hi",
+    "description": "single toh filler",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 56,
+    "filename": "hing_056_false.wav",
+    "text": "Acha acha",
+    "language": "hi",
+    "description": "acha repeated",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 57,
+    "filename": "hing_057_false.wav",
+    "text": "Bas ek second woh issue hai na",
+    "language": "hi",
+    "description": "bas ek second hai na",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 58,
+    "filename": "hing_058_false.wav",
+    "text": "Woh matlab jo order hai",
+    "language": "hi",
+    "description": "woh matlab incomplete",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  },
+  {
+    "idx": 59,
+    "filename": "hing_059_false.wav",
+    "text": "Actually woh dekho na",
+    "language": "hi",
+    "description": "actually trailing na",
+    "label": 0,
+    "endpoint_bool": false,
+    "synthetic": true
+  }
+]

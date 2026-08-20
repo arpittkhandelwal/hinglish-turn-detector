@@ -1,0 +1,61 @@
+idx,filename,text,language,description,label,endpoint_bool,synthetic
+0,hing_000_true.wav,Mera order kal deliver ho jayega,hi,order delivery complete,1,True,True
+1,hing_001_true.wav,Main kal online payment kar doonga,hi,payment intent complete,1,True,True
+2,hing_002_true.wav,Shiprocket se shipment track karo,hi,track shipment complete,1,True,True
+3,hing_003_true.wav,Mujhe refund chahiye please,hi,refund request complete,1,True,True
+4,hing_004_true.wav,Order cancel kar do,hi,cancel request complete,1,True,True
+5,hing_005_true.wav,Address update kar dena,hi,address update request,1,True,True
+6,hing_006_true.wav,Meri complaint register karo,hi,complaint complete sentence,1,True,True
+7,hing_007_true.wav,Package damage ho gaya hai,hi,damage report complete,1,True,True
+8,hing_008_true.wav,Delivery partner ka number do,hi,contact request complete,1,True,True
+9,hing_009_true.wav,Cod available hai is order mein,hi,COD query answered,1,True,True
+10,hing_010_true.wav,Tracking ID share karo mere saath,hi,tracking request,1,True,True
+11,hing_011_true.wav,Return policy kya hai Shiprocket ki,hi,policy question complete,1,True,True
+12,hing_012_true.wav,Mera account verify nahi ho raha,hi,verification issue,1,True,True
+13,hing_013_true.wav,Pincode service nahi hai yahan,hi,service unavailability,1,True,True
+14,hing_014_true.wav,Estimated delivery kab hai,hi,ETA query,1,True,True
+15,hing_015_true.wav,Main complaint file karna chahta hoon,hi,complaint intent,1,True,True
+16,hing_016_true.wav,Invoice download kaise karte hain,hi,invoice query,1,True,True
+17,hing_017_true.wav,International shipping available hai,hi,intl shipping query,1,True,True
+18,hing_018_true.wav,Weight mismatch issue hai mera,hi,weight issue complete,1,True,True
+19,hing_019_true.wav,Bulk order discount milega kya,hi,bulk discount query,1,True,True
+20,hing_020_true.wav,Support team se baat karni hai,hi,support escalation,1,True,True
+21,hing_021_true.wav,Order already shipped ho gaya,hi,status update complete,1,True,True
+22,hing_022_true.wav,Warehouse se pickup kab hoga,hi,pickup query,1,True,True
+23,hing_023_true.wav,RTO charge kyun laga mujhe,hi,RTO charge query,1,True,True
+24,hing_024_true.wav,Mujhe naya label chahiye,hi,label request,1,True,True
+25,hing_025_true.wav,Seller account suspend ho gaya,hi,account issue,1,True,True
+26,hing_026_true.wav,COD amount credit ho gaya account mein,hi,COD credit confirmed,1,True,True
+27,hing_027_true.wav,API integration mein issue aa raha hai,hi,API issue complete,1,True,True
+28,hing_028_true.wav,Dashboard login nahi ho raha,hi,login issue complete,1,True,True
+29,hing_029_true.wav,Main satisfied hoon service se,hi,satisfaction complete,1,True,True
+30,hing_030_false.wav,Matlab woh jo order tha na,hi,trailing 'na' filler,0,False,True
+31,hing_031_false.wav,Toh basically acha,hi,toh/acha filler only,0,False,True
+32,hing_032_false.wav,Haan so ek second,hi,haan-so filler pause,0,False,True
+33,hing_033_false.wav,Woh kya hai na actually,hi,trailing 'na' with actually,0,False,True
+34,hing_034_false.wav,Matlab delivery wali baat kar raha tha,hi,mid-thought delivery,0,False,True
+35,hing_035_false.wav,Toh main bol raha tha ki,hi,toh main trailing ki,0,False,True
+36,hing_036_false.wav,Acha toh,hi,short acha-toh filler,0,False,True
+37,hing_037_false.wav,Haan matlab,hi,haan matlab filler,0,False,True
+38,hing_038_false.wav,Woh ek order tha na mera,hi,tha-na trailing,0,False,True
+39,hing_039_false.wav,Bas woh issue jo hai,hi,bas woh trailing,0,False,True
+40,hing_040_false.wav,Basically acha actually dekho,hi,multiple fillers,0,False,True
+41,hing_041_false.wav,Matlab woh issue basically,hi,matlab basically,0,False,True
+42,hing_042_false.wav,Toh tracking wala page,hi,incomplete trailing,0,False,True
+43,hing_043_false.wav,Acha woh delivery partner,hi,acha incomplete,0,False,True
+44,hing_044_false.wav,Haan toh woh jo tha na,hi,haan toh tha na,0,False,True
+45,hing_045_false.wav,Main soch raha tha ki,hi,soch raha trailing ki,0,False,True
+46,hing_046_false.wav,Woh actually matlab,hi,woh actually matlab,0,False,True
+47,hing_047_false.wav,Toh acha bhai woh order,hi,toh acha bhai,0,False,True
+48,hing_048_false.wav,Matlab basically acha,hi,multiple filler chain,0,False,True
+49,hing_049_false.wav,Haan woh package wala issue na,hi,woh issue na,0,False,True
+50,hing_050_false.wav,So basically delivery ka issue,hi,so basically trailing,0,False,True
+51,hing_051_false.wav,Acha toh woh jo,hi,acha toh woh incomplete,0,False,True
+52,hing_052_false.wav,Haan haan acha,hi,haan haan filler,0,False,True
+53,hing_053_false.wav,Woh ek second actually,hi,trailing actually,0,False,True
+54,hing_054_false.wav,Matlab,hi,single matlab filler,0,False,True
+55,hing_055_false.wav,Toh,hi,single toh filler,0,False,True
+56,hing_056_false.wav,Acha acha,hi,acha repeated,0,False,True
+57,hing_057_false.wav,Bas ek second woh issue hai na,hi,bas ek second hai na,0,False,True
+58,hing_058_false.wav,Woh matlab jo order hai,hi,woh matlab incomplete,0,False,True
+59,hing_059_false.wav,Actually woh dekho na,hi,actually trailing na,0,False,True

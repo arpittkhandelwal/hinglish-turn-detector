@@ -1,0 +1,19 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# Large model/data files (too big for GitHub)
+splits/
+checkpoints/
+onnx/*.data
+hinglish_eval/*.wav
+hinglish_eval/features.npy
+
+# Cache
+cache/
+hin_samples/
+.DS_Store

@@ -1,0 +1,38 @@
+# Core ML
+torch>=2.1.0
+torchaudio>=2.1.0
+transformers>=4.40.0
+datasets>=2.19.0
+huggingface_hub>=0.23.0
+accelerate>=0.30.0
+
+# Audio
+librosa>=0.10.1
+soundfile>=0.12.1
+audioread>=3.0.1
+
+# ONNX export & inference
+onnx>=1.16.0
+onnxruntime>=1.18.0
+optimum>=1.20.0
+
+# Data science
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# TTS for Hinglish eval set synthesis
+gTTS>=2.5.0
+pydub>=0.25.1
+
+# Gradio demo
+gradio>=4.40.0
+
+# Whisper (for hin-subset inspection only)
+openai-whisper>=20231117
+
+# Utilities
+tqdm>=4.66.0
+scipy>=1.13.0

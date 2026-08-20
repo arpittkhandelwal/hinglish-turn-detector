@@ -1,0 +1,29 @@
+{
+  "experiment": 1,
+  "best_epoch": 1,
+  "best_val_auroc": 0.46432742923886783,
+  "final_val_metrics": {
+    "loss": 0.6839044690132141,
+    "auroc": 0.46432742923886783,
+    "f1": 0.6515580736543909,
+    "acc": 0.508
+  },
+  "best_val_metrics": {
+    "loss": 0.6839044690132141,
+    "auroc": 0.46432742923886783,
+    "f1": 0.6515580736543909,
+    "acc": 0.508
+  },
+  "param_info": {
+    "total": 8257793,
+    "trainable": 50177,
+    "frozen": 8207616,
+    "trainable_pct": 0.61
+  },
+  "config": {
+    "train_split": "train",
+    "epochs_run": 1,
+    "batch_size": 32,
+    "lr": 0.0002
+  }
+}

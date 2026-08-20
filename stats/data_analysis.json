@@ -1,0 +1,63 @@
+{
+  "sample_size": 15000,
+  "overall_balance": {
+    "true": 7438,
+    "false": 7562,
+    "true_pct": 49.586666666666666,
+    "false_pct": 50.413333333333334,
+    "pos_weight": 1.016671148158107
+  },
+  "language_counts": {
+    "eng": 3646,
+    "spa": 907,
+    "rus": 731,
+    "hin": 721,
+    "por": 712,
+    "nld": 688,
+    "deu": 674,
+    "fra": 628,
+    "pol": 459,
+    "tur": 457,
+    "ben": 449,
+    "kor": 449,
+    "zho": 438,
+    "vie": 438,
+    "fin": 435,
+    "nor": 432,
+    "ind": 430,
+    "ara": 403,
+    "ita": 400,
+    "jpn": 397,
+    "ukr": 385,
+    "dan": 365,
+    "mar": 356
+  },
+  "dataset_source_counts": {
+    "chirp3_1": 8200,
+    "chirp3_2": 3693,
+    "liva_1": 1729,
+    "midcentury_1": 469,
+    "rime_2": 196,
+    "mundo_1": 194,
+    "human_5": 192,
+    "orpheus_grammar_1": 92,
+    "orpheus_endfiller_1": 89,
+    "orpheus_midfiller_1": 72,
+    "human_convcollector_1": 38,
+    "chirp3_3_short": 36
+  },
+  "hard_negatives": {
+    "count": 3239,
+    "pct_of_negatives": 42.83258397249405
+  },
+  "hin_subset": {
+    "count": 721,
+    "endpoint_true": 346
+  },
+  "duration_stats": {
+    "mean": null,
+    "median": null,
+    "p5": null,
+    "p95": null
+  }
+}
