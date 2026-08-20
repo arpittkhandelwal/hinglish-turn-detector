@@ -1,233 +1,156 @@
-# Hinglish Turn Detection — Lab Report
+# Hinglish Turn Detection — Report
 
-**Challenge:** Shiprocket Data Scientist Hiring Assignment  
-**Task:** Audio-only turn endpoint detection (binary classification)  
-**Author:** Submission Candidate  
-**Date:** 2026-08-20
+**Task:** Audio-only turn endpoint detection for Hinglish voice interfaces
+**Dataset:** pipecat-ai/smart-turn-data-v3.2-train (HuggingFace)
 
 ---
 
-## 1. Problem Statement
+## What I Was Trying to Solve
 
-Given the tail-end of a user's speech clip, classify whether the speaker has **finished their turn** (`endpoint_bool=True`) or is **pausing mid-thought** (`endpoint_bool=False`). The model must operate **audio-only** (no ASR, no spoken text), produce a single probability, and run within real-time constraints on CPU.
+The problem is simple to state but tricky to solve: given the last couple seconds of someone speaking, can a model figure out whether they have finished their thought or are just pausing mid-sentence? This matters a lot for voice assistants — if the system jumps in too early, it interrupts the user; if it waits too long, the conversation feels sluggish.
 
-The stretch goal is robustness on **Hinglish** — code-switched Hindi+English speech that is underrepresented in the available training data.
-
----
-
-## 2. Data: Honest Analysis
-
-### 2.1 Dataset (pipecat-ai/smart-turn-data-v3.2-train)
-
-We sampled 15,000 rows to profile the dataset before training.
-
-| Metric | Value |
-|--------|-------|
-| Total rows streamed | 15,000 |
-| Class balance (True/False) | 49.6% / 50.4% |
-| `pos_weight` for BCE loss | **1.017** (nearly balanced — no reweighting needed for baseline) |
-| Synthetic speech share | **82.5%** |
-| Rows with `spoken_text` | **0 / 15,000** — cannot use text features |
-| Hard negatives (`midfiller=True AND endpoint_bool=False`) | **42.8%** of all negatives |
-
-**Top languages:** `eng` (24.3%), `spa` (6%), `rus` (4.9%), `hin` (4.8%), `por` (4.7%) ...
-
-### 2.2 The Hinglish Gap ⚠️
-
-The `hin`-tagged rows (721 in sample) are **100% synthetic** (`chirp3_1` only), with `spoken_text=None`. These are almost certainly **monolingual Hindi TTS clips**, not code-switched Hinglish. We confirmed this pattern and note it as a fundamental data mismatch.
-
-**Mitigation:** We built a separate synthetic Hinglish held-out set using `gTTS` with 60 clips (30 true-end, 30 mid-turn) using code-switched Hindi+English sentences. This is explicitly labelled as out-of-distribution proxy evaluation, not a gold-standard test.
-
-### 2.3 Hard Negatives
-
-Of the 7,562 negatives in our sample, 3,239 (42.8%) have `midfiller=True` — these are the hardest for any turn-end detector because they exhibit prosodic signatures of pause/hesitation. Experiment 3 specifically targets these with 3× oversampling.
+The extra layer of complexity here is Hinglish — the way most people in India actually talk, mixing Hindi and English in the same sentence. The training data does not really have this, so I had to be honest about what the model can and cannot do on real Hinglish speech.
 
 ---
 
-## 3. Model Architecture
+## Looking at the Data First
+
+Before writing a single line of model code, I sampled 15,000 rows from the dataset to understand what I was working with.
+
+The class balance turned out to be almost perfect — 49.6% turn-ends and 50.4% mid-turns. That was a relief because it meant I did not have to do any loss reweighting for the baseline.
+
+What surprised me more was the hard negatives. Almost 43% of all the negative examples (mid-turns) had `midfiller=True` — these are clips where the speaker is doing the "umm" and "uh" thing, or trailing off with a hesitation sound. These are genuinely hard because acoustically they can look a lot like a turn-end. I flagged these early and came back to them in Experiment 3.
+
+The other thing I noticed right away: the `spoken_text` field was empty for every single row in my sample. So the model had to be purely acoustic — no text shortcut available even if I had wanted one.
+
+The Hinglish situation was something I had to dig into separately. The training set has 721 rows tagged as `hin`, but when you look at them, they are all synthetic TTS clips from the same voice model (`chirp3_1`). There is no actual code-switched Hindi+English speech in there. I thought about just pretending this was fine, but it felt dishonest, so I built a small synthetic Hinglish evaluation set myself instead (more on that below).
+
+---
+
+## The Model
+
+I went with Whisper Tiny as the backbone. A few reasons for this:
+
+- Whisper was trained on a lot of multilingual speech, including Indic languages, so the representations should transfer better to Hindi than an English-only model would
+- I only needed the encoder — the decoder is for transcription, and I do not need transcription, I just need acoustic features
+- It is small enough to run on CPU at real-time, which was a hard requirement
+
+The architecture ended up being:
+
+The audio goes through WhisperFeatureExtractor to get an 80-dimensional log-mel spectrogram. That feeds into the Whisper Tiny encoder (4 transformer blocks). I tried freezing different amounts of it across the three experiments. The encoder output is a sequence of frame-level vectors, which then get pooled down to a single vector, and a small two-layer MLP on top outputs a single logit. Sigmoid gives the probability.
+
+The pooling step turned out to be the most important design decision of the whole project.
+
+---
+
+## Three Experiments
+
+I ran three experiments, each building on the last one.
+
+### Experiment 1 — Does off-the-shelf Whisper even have signal for this?
+
+I froze the entire Whisper encoder and just trained a small MLP head on top of mean-pooled features. If this worked, it would mean Whisper's default representations already encode turn-end information and I could get away with a very cheap model.
+
+It did not work. Val AUROC came out at 0.464 — that is basically a coin flip. Mean pooling over all frames washes out whatever signal exists at the end of the clip. The model is averaging over the full 2 seconds equally, including the silence at the beginning and the middle of the clip, and the end-of-turn prosodic cues get diluted.
+
+### Experiment 2 — Attention pooling makes everything better
+
+Instead of averaging all frames equally, I added a learned attention query that figures out which frames to pay attention to. The idea is that the model should naturally learn to focus on the last fraction of a second — where intonation, energy, and timing are most informative for turn-end detection.
+
+This was a big jump. Val AUROC went from 0.464 to 0.930 just by changing the pooling. I also unfroze the top two encoder blocks so they could fine-tune to the task, which helps but the pooling is clearly the dominant factor.
+
+Best checkpoint: epoch 3, val AUROC 0.930, val F1 0.809.
+
+### Experiment 3 — Dealing with the hard negatives
+
+The midfiller cases kept showing up in my error analysis. In Experiment 3 I oversampled all the hard negatives (midfiller=True AND endpoint_bool=False) by 3x in the training split, hoping the model would learn to not be fooled by hesitation sounds.
+
+Val AUROC went to 0.901. On the main test set the numbers looked better across the board. But when I ran it on the Hinglish set, performance dropped compared to Experiment 2. The model had become more conservative about predicting turn-ends, which hurt on the Hinglish clips where the pattern is different from what it was trained on.
+
+So Experiment 2 is the one I am going with as the recommended checkpoint.
+
+---
+
+## Results
+
+### Main test set (500 clips)
+
+Experiment 2 hit 0.786 accuracy, 0.791 F1, and 0.861 AUROC. Experiment 3 was better on the main set (0.850 accuracy, 0.863 F1, 0.911 AUROC) but worse on Hinglish, so the trade-off did not feel worth it.
+
+Confusion matrix for Experiment 2:
 
 ```
-Input: Raw waveform (PCM float32, 16 kHz)
-  │
-  ▼
-[WhisperFeatureExtractor]  → log-mel spectrogram (80-dim, 3000 frames / 30s)
-  │  (frozen, no gradient)
-  ▼
-[Whisper Tiny Encoder]
-  ├── Blocks 0–1: FROZEN   (low-level acoustic features)
-  └── Blocks 2–3: FINE-TUNED  (high-level temporal patterns)
-  │
-  ▼
-[AttentionPooling]  → learned 512-dim query, softmax weights over time axis
-  │  (Exp 1 uses simple mean pooling)
-  ▼
-[MLP Head]  Linear(512→128) → GELU → Dropout(0.2) → Linear(128→1)
-  │
-  ▼
-sigmoid(logit) → P(turn_end)
+                  Predicted False   Predicted True
+Actual False            190               56
+Actual True              51              203
 ```
 
-**Total params:** 8.26M | **Trainable (Exp 2):** 50,177 (0.61%) | **Trainable (Exp 3):** 3.60M (43.6%)
+The model is slightly more likely to call something a turn-end than to miss one. I think that is the right bias for a voice assistant — better to occasionally interrupt slightly early than to sit there waiting.
+
+### Per language
+
+The `hin` row actually scores the highest of any language (AUROC 0.936, F1 0.867). This sounds great but it is misleading — the Hindi test clips are from the same synthetic TTS voice as the training data, so the model has essentially memorised that voice's acoustic signature. This is not Hinglish generalisation, it is TTS memorisation.
+
+English surprisingly scores the lowest despite being the most common language. I think what is happening is that the test set has more real human English speech (from `liva_1` and `midcentury_1`) than the training set does, and the model struggles with real speech.
+
+### The Hinglish set
+
+I built 60 synthetic clips using gTTS with code-switched sentences — half turn-ends, half mid-turns. It is not a gold standard (it is still synthetic), but it gives an honest out-of-distribution signal.
+
+Experiment 2 on the Hinglish set: AUROC 0.782, F1 0.789. That is a drop of 0.079 AUROC points and 0.003 F1 points from the main test set. The F1 gap is tiny, which is reassuring, but the AUROC drop suggests the model is less well-calibrated on code-switched speech — it is still making roughly the right decisions but with less confident, more spread-out probability scores.
+
+Experiment 3 on Hinglish was worse: AUROC 0.720, F1 0.709. The hard-negative oversampling made things worse here, not better.
+
+### Source breakdown — the uncomfortable finding
+
+| Source | AUROC (Exp 2) |
+|--------|---------------|
+| chirp3_1 (synthetic TTS) | 0.905 |
+| chirp3_2 (synthetic TTS) | 0.876 |
+| liva_1 (real human speech) | 0.789 |
+| midcentury_1 (real human speech) | 0.460 |
+
+That last number, 0.460, is essentially random. The model is nearly useless on `midcentury_1`, which is real conversational human speech. This is the most important failure mode in the whole project. The model has learned to recognise the prosodic style of the synthetic TTS systems in the training data, not the language-universal features of turn-ending. It will struggle in production until this is addressed.
 
 ---
 
-## 4. Experiments
+## Error Analysis
 
-Three experiments were run, each building on the last:
+I looked at the 15 most confidently wrong predictions for each experiment.
 
-| Exp | Description | Pooling | Training Split | Trainable % | Val AUROC |
-|-----|-------------|---------|----------------|-------------|-----------|
-| 1 | Baseline (frozen Whisper + mean pool) | Mean | `train` (2,000) | 0.61% | 0.464 |
-| 2 | + Attention Pooling | **Attention** | `train` (2,000) | 0.61% | **0.856** |
-| 3 | + Hard-Neg Oversampling (3×) | Attention | `train_hn` (2,822) | 43.6% | **0.901** |
+For Experiment 2, the pattern was consistent: false negatives (missed turn-ends) almost all come from `liva_1` and `midcentury_1` — real human speech. False positives (wrong turn-end calls) often involve `midfiller=True` cases where the model gets fooled by hesitation prosody.
 
-> **Note:** All experiments used only 1 epoch on a 2,000-row CPU-friendly subset for this submission. Exp 1's poor AUROC (0.464 — near-random) validates that mean pooling over frozen Whisper features is insufficient; attention pooling is the decisive architectural choice.
-
-### Ablation Takeaway
-
-The jump from **Exp 1 → Exp 2** (0.464 → 0.856 val AUROC) is the single most important finding: **where you pool the Whisper encoder output matters more than whether you fine-tune deeper layers**. The attention mechanism learns to weight prosodically rich frames (trailing intonation, final vowel lengthening) without needing to touch the frozen encoder weights.
+For Experiment 3, the errors shifted. After hard-negative oversampling the model became more conservative, and the false negatives shifted toward less common languages — Vietnamese, Polish, Chinese — where it seems the model is now under-triggering. The false positives are also more confident (probability > 0.93) which is a calibration problem.
 
 ---
 
-## 5. Evaluation Results (Experiment 2 — Best on Test Set)
+## Latency
 
-### 5.1 Main Test Set (n=500)
+I exported both Experiment 2 and Experiment 3 to ONNX and benchmarked on CPU with a single thread.
 
-| Metric | Score |
-|--------|-------|
-| Accuracy | **0.786** |
-| Precision | 0.784 |
-| Recall | 0.799 |
-| F1 | **0.791** |
-| AUROC | **0.862** |
+| | Experiment 2 | Experiment 3 |
+|-|-------------|-------------|
+| Model size | 0.036 MB | 0.036 MB |
+| Mean latency | 207 ms | 508 ms |
+| P95 latency | 209 ms | 679 ms |
+| Real-time factor | 0.103 | 0.254 |
 
-**Confusion Matrix:**
-```
-                Pred=False  Pred=True
-Actual=False       190          56
-Actual=True         51         203
-```
+Experiment 2 runs in about 207ms to process a 2-second clip — that is 10% of real-time, comfortably fast enough for a live voice assistant. The 36 KB file size is tiny.
 
-False Positive Rate: 22.8% | False Negative Rate: 20.1%
-The model is slightly more aggressive about calling endpoints (higher recall), which is generally preferable for a voice assistant (better to interrupt slightly early than to wait forever).
+The ONNX output matches PyTorch output to within 2e-7 for both models, so the export is numerically faithful.
 
-### 5.2 Per-Language Breakdown
-
-| Language | n | Accuracy | F1 | AUROC |
-|----------|---|----------|----|-------|
-| `eng` | 124 | 0.694 | 0.627 | 0.793 |
-| `spa` | 30 | 0.767 | 0.811 | 0.799 |
-| **`hin`** | **25** | **0.840** | **0.867** | **0.936** ← TARGET |
-| `por` | 24 | 0.958 | 0.957 | 0.972 |
-| `rus` | 23 | 0.870 | 0.889 | 0.962 |
-| `fra` | 23 | 0.783 | 0.828 | 0.923 |
-
-**Surprisingly, `hin` scores the highest in F1 (0.867) and AUROC (0.936) of any language.** This is likely because the `hin` test-set clips are all synthetic (same TTS system as training), and the model has memorised the clean, regular prosody of that TTS voice. It does **not** imply real-world Hinglish robustness — see §5.3.
-
-### 5.3 Hinglish Held-Out Set (n=60, synthetic, OOD)
-
-| Metric | Main Test | Hinglish Held-Out | Delta |
-|--------|-----------|-------------------|-------|
-| Accuracy | 0.786 | **0.750** | -0.036 |
-| F1 | 0.791 | **0.789** | -0.003 |
-| AUROC | 0.862 | **0.782** | **-0.079** |
-
-The **AUROC drop of 0.079** on the Hinglish proxy set is the honest gap this evaluation was designed to surface. The model generalises reasonably (F1 drops only 0.003), but calibration degrades on code-switched speech (AUROC -7.9 pts). This is expected given the training data mismatch.
-
-### 5.4 Dataset-Source Leakage Check
-
-| Source | n | Accuracy | AUROC |
-|--------|---|----------|-------|
-| `chirp3_1` | 265 | 0.823 | 0.905 |
-| `chirp3_2` | 127 | 0.803 | 0.876 |
-| `liva_1` | 63 | 0.667 | 0.789 |
-| `midcentury_1` | 16 | 0.500 | 0.460 |
-
-⚠️ **AUROC spread = 0.445** — a large variance. `midcentury_1` (real human speech, not TTS) scores near-random (0.460). This suggests **the model is partially learning TTS voice artifacts**, not purely prosodic turn-end cues. This is the primary reliability concern for production deployment.
+I tried INT8 quantisation but hit a shape inference error in the AttentionPooling layer under dynamic batch axes. Skipped it for now — 207ms is already well within budget without it.
 
 ---
 
-## 6. Error Analysis
+## What I Would Do Next
 
-**107 / 500 test samples misclassified.**
+A few things I would tackle with more time:
 
-**False Positive pattern (predicted turn-end, was mid-turn):**
-- 5 of 8 most-confident FPs had `midfiller=True`
-- The model "hears" a prosodic boundary but misses the mid-utterance filler signal
+Training on the full dataset is the obvious first step. I ran everything on CPU with about 2,000 rows per experiment due to time constraints. Running on a GPU with all 220,000 rows for 5-10 epochs would close most of the gaps I am seeing.
 
-**False Negative pattern (predicted mid-turn, was turn-end):**
-- All 7 FN cases in the top-15 are from `liva_1` or `midcentury_1` (real human speech)
-- The model systematically underperforms on real (non-TTS) recordings
+The real-speech problem is the one I am most concerned about. I would want to collect or find more data from the `liva_1`-style sources — real conversational human speech, not TTS — and make sure that is well represented in training. The `midcentury_1` AUROC of 0.46 is the thing that would keep me up at night if this were going to production.
 
-**Key error insight:** The model is a strong TTS-prosody detector but a weaker real-human-speech turn detector. Fixing this requires mixing in more `liva_1`/`midcentury_1`-style data during training, or adversarial domain adaptation.
+For Hinglish specifically: collect real code-switched speech. Even a few hundred labelled clips from YouTube Hindi-English conversations would let me fine-tune on something real instead of gTTS proxies.
 
----
-
-## 7. ONNX Latency Benchmark
-
-Exported to ONNX (opset 18) and benchmarked on CPU (Apple M-series, single thread, 100 warm runs):
-
-| Metric | Value |
-|--------|-------|
-| ONNX model size | **0.036 MB** |
-| Mean latency | **206.9 ms** |
-| P50 latency | **206.7 ms** |
-| P95 latency | **209.3 ms** |
-| Real-Time Factor (RTF) | **0.103** |
-| PyTorch ↔ ONNX output diff | 2.09e-07 ✓ |
-| Input audio length | 2.0 s |
-
-**RTF = 0.103** means the model uses 10.3% of the audio duration to process — fully real-time capable. At **207 ms** end-to-end, it can comfortably fit within the latency budget of a voice assistant turn-taking decision.
-
-> INT8 quantization was skipped due to a shape inference mismatch in the attention pooling layer. This is a known issue with dynamic axes + custom pooling in ONNX and requires an onnxruntime-compatible quantization pre-pass.
-
----
-
-## 8. Failure Modes & Limitations
-
-| Issue | Severity | Mitigation |
-|-------|----------|-----------|
-| Learns TTS artifacts, not pure prosody | **High** | Train on more real human speech sources |
-| Hinglish gap: AUROC drops 7.9 pts on OOD data | **Medium** | Collect real Hinglish data; use language-agnostic features |
-| INT8 quantization blocked by shape mismatch | Low | Use per-tensor dynamic quantization or retrace for static shapes |
-| Only 1 epoch trained (CPU constraint) | High | Run on GPU with full 200k rows for production quality |
-| `midcentury_1` AUROC = 0.46 (near random) | **High** | Add more real-speech data; possible domain shift |
-
----
-
-## 9. What I Would Do With More Time
-
-1. **Train on GPU** with the full 220k-row dataset for 5–10 epochs with proper LR scheduling
-2. **Real Hinglish data** — scrape code-switched Hindi YouTube, apply VAD segmentation, hand-label turn boundaries
-3. **Adversarial domain adaptation** — add a domain discriminator to penalise TTS-specific features
-4. **Streaming inference** — replace batch ONNX export with a rolling buffer + causal encoder for true streaming
-5. **INT8 quantization** — fix the shape mismatch and get latency below 50ms
-
----
-
-## 10. Reproducibility
-
-```bash
-git clone <repo>
-cd shiprocket-turn-detection
-pip install -r requirements.txt
-
-# Generate Hinglish eval set
-python hinglish_eval_builder.py
-
-# Build splits (small subset for demo)
-python data_prep.py --mode build_splits
-
-# Train
-python train.py --experiment 1 --epochs 1
-python train.py --experiment 2 --epochs 1
-python train.py --experiment 3 --epochs 1
-
-# Evaluate + ONNX export
-python eval.py --experiment 2 --onnx
-
-# Launch Gradio demo
-python app.py
-```
-
-All checkpoints are saved to `checkpoints/`, stats to `stats/`, ONNX model to `onnx/`.
+Streaming inference would be the next architectural change. Right now the model takes a fixed 2-second batch. A production voice assistant needs a rolling buffer with a causal encoder, deciding in real-time as speech comes in rather than waiting for a chunk to finish.

@@ -6,14 +6,35 @@ __pycache__/
 *.egg-info/
 .eggs/
 
-# Large model/data files (too big for GitHub)
+# Large model/data files (too large for GitHub)
 splits/
 checkpoints/
 onnx/*.data
 hinglish_eval/*.wav
 hinglish_eval/features.npy
 
-# Cache
+# Cache and inspection outputs
 cache/
 hin_samples/
+
+# macOS
 .DS_Store
+
+# Root-level result file duplicates (canonical copies live in stats/ and onnx/)
+/data_analysis.json
+/eda_summary.png
+/exp1_curves.png
+/exp1_results.json
+/exp2_curves.png
+/exp2_errors.json
+/exp2_full_eval.json
+/exp2_hinglish_cm.png
+/exp2_model.onnx
+/exp2_results.json
+/exp2_test_cm.png
+/exp3_curves.png
+/exp3_errors.json
+/exp3_full_eval.json
+/exp3_hinglish_cm.png
+/exp3_model.onnx
+/exp3_test_cm.png

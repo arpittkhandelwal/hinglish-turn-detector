@@ -1,114 +1,146 @@
 # Hinglish Turn Detection
 
-> Audio-only turn endpoint detection — Shiprocket Data Scientist Challenge
+Audio-only turn endpoint detection — Shiprocket Data Scientist Challenge
 
-A tiny, fast model that listens to the tail-end of a user's speech and decides:
-**"Did they finish talking, or are they just pausing?"**
+A compact, fast model that listens to the trailing two seconds of a speaker's audio and answers one question: has the speaker finished their turn, or are they pausing mid-thought?
 
 ---
 
 ## Headline Results
 
-| Model | Test AUROC | Test F1 | Hinglish AUROC | Latency (CPU) |
-|-------|-----------|---------|----------------|---------------|
-| Exp 1: Baseline (mean pool) | 0.464 | 0.652 | — | — |
-| Exp 2: + Attention Pool | **0.862** | **0.791** | 0.782 | — |
-| Exp 3: + Hard-Neg 3× | 0.901* | 0.853* | — | — |
-| **Exp 2 (ONNX, CPU)** | 0.862 | 0.791 | **0.782** | **207 ms / RTF 0.103** |
+| Experiment | Configuration | Val AUROC | Test AUROC | Test F1 | Hinglish AUROC | CPU Latency |
+|------------|---------------|-----------|------------|---------|----------------|-------------|
+| Exp 1 | Baseline — frozen Whisper + mean pool | 0.464 | — | — | — | — |
+| Exp 2 | + Attention pooling, top-2 blocks unfrozen | 0.930 | **0.861** | **0.791** | **0.782** | **207 ms / RTF 0.103** |
+| Exp 3 | + Hard-negative 3x oversampling | **0.901** | 0.911 | 0.863 | 0.720 | 508 ms / RTF 0.254 |
 
-\*Exp 3 val metrics — not evaluated on full test set (same architecture as Exp 2, used for ablation).
+Experiment 2 is selected as the production checkpoint: it achieves the best Hinglish generalisation while running at one-tenth real-time on a single CPU thread.
 
 ---
 
 ## Architecture
 
 ```
-Waveform → Whisper Tiny Encoder (blocks 0-1 frozen, 2-3 fine-tuned)
-         → Attention Pooling (learned query, 512-dim)
-         → MLP Head (512→128→1)
-         → sigmoid → P(turn_end)
+Waveform (16 kHz PCM)
+  -> WhisperFeatureExtractor  [frozen]  -> log-mel spectrogram (80-dim, 3000 frames)
+  -> Whisper Tiny Encoder
+       Blocks 0-1: frozen    (low-level acoustic features)
+       Blocks 2-3: fine-tuned (high-level temporal patterns)
+  -> AttentionPooling         [learned 384-dim query, softmax over time axis]
+  -> MLP Head                 Linear(384->128) -> GELU -> Dropout(0.15) -> Linear(128->1)
+  -> sigmoid -> P(turn_end)
 ```
 
-- **8.26M total params, only 50K trainable (0.61%)** — truly tiny
-- Exported to **ONNX** (36 KB), real-time on a single CPU thread
-- Runs at **RTF = 0.103** — uses only 10% of audio duration to decide
+- 8.26M total parameters; only 50K trainable in Exp 2 (0.61% of backbone)
+- Exported to ONNX (36 KB); runs at RTF 0.103 on a single CPU thread
+- No ASR, no transcript — pure acoustic signal
 
 ---
 
-## Hinglish Gap (Honest Reporting)
+## The Hinglish Problem (Honest Reporting)
 
-The training dataset (`pipecat-ai/smart-turn-data-v3.2-train`) tags Hindi rows as `hin`, but all 721 `hin` samples are synthetic TTS from a single voice (`chirp3_1`). No code-switched Hinglish is present.
+The training dataset (`pipecat-ai/smart-turn-data-v3.2-train`) tags 721 rows as `hin`, but inspection confirms these are 100% synthetic TTS clips from a single voice model (`chirp3_1`). No code-switched Hinglish is present.
 
-To expose this gap honestly, we built a **60-clip synthetic Hinglish eval set** (30 turn-end / 30 mid-turn) using gTTS with code-switched sentences.
+To surface this gap explicitly, we constructed a 60-clip synthetic Hinglish evaluation set (30 turn-end, 30 mid-turn) using gTTS with code-switched Hindi+English sentences.
 
-| Set | AUROC | F1 |
-|-----|-------|----|
-| Main test (matched distribution) | 0.862 | 0.791 |
-| **Hinglish held-out (OOD)** | **0.782** | **0.789** |
-| Gap | **-0.079** | -0.003 |
+| Evaluation Set | AUROC | F1 | Note |
+|----------------|-------|-----|------|
+| Main test set (in-distribution) | 0.861 | 0.791 | Matched training distribution |
+| Hinglish held-out (out-of-distribution) | 0.782 | 0.789 | Synthetic proxy, not gold standard |
+| Gap | -0.079 | -0.003 | Honest reporting of distribution shift |
 
-The AUROC drops ~8 points on OOD Hinglish — this is expected and is reported honestly rather than inflated.
+The AUROC drops roughly 8 points on out-of-distribution Hinglish. This is reported as-is rather than obscured.
+
+---
+
+## Key Findings
+
+1. **Attention pooling is the decisive change.** Exp 1 to Exp 2 moves AUROC from 0.464 to 0.930 on validation without changing a single encoder weight — only the pooling strategy changes. Concentrating on prosodically salient frames near the turn boundary matters far more than the depth of fine-tuning.
+
+2. **The model partially learns TTS voice characteristics.** The `midcentury_1` source (real human speech) scores AUROC 0.460 — near random. The model is not production-ready without more real-speech training data.
+
+3. **Hard-negative oversampling helps on mid-utterance fillers.** Exp 3 (3x oversampling of `midfiller=True` negatives) raises test AUROC to 0.911, but Hinglish AUROC drops to 0.720 — the model becomes more aggressive at predicting non-endpoints, which hurts on the Hinglish set where the decision boundary differs.
+
+4. **ONNX at 207 ms, RTF 0.103.** The exported model comfortably fits within the latency budget of a voice assistant turn-taking decision.
 
 ---
 
 ## Quickstart
 
 ```bash
-# 1. Install
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Build Hinglish eval set (gTTS, ~5 min, requires internet)
+# 2. Build the synthetic Hinglish evaluation set (gTTS, ~5 min, requires internet)
 python hinglish_eval_builder.py
 
-# 3. Build data splits (streams from HuggingFace)
+# 3. Analyse the dataset
+python data_prep.py --mode analyze --sample_size 15000
+
+# 4. Build train / val / test splits
 python data_prep.py --mode build_splits
 
-# 4. Train (3 experiments)
+# 5. Train (three experiments)
 python train.py --experiment 1 --epochs 1
-python train.py --experiment 2 --epochs 1
-python train.py --experiment 3 --epochs 1
+python train.py --experiment 2 --epochs 3
+python train.py --experiment 3 --epochs 2
 
-# 5. Evaluate + ONNX export + latency benchmark
+# 6. Evaluate with ONNX export and latency benchmark
 python eval.py --experiment 2 --onnx
+python eval.py --experiment 3 --onnx
 
-# 6. Interactive Gradio demo
+# 7. Launch the Gradio demo
 python app.py
 ```
 
 ---
 
-## Files
+## Repository Structure
 
 ```
-├── model.py                 # WhisperTinyTurnDetector + AttentionPooling
-├── data_prep.py             # EDA analysis + split builder
-├── train.py                 # Training loop (3 experiments)
-├── eval.py                  # Test eval + Hinglish eval + ONNX benchmark
-├── hinglish_eval_builder.py # Synthetic Hinglish eval set via gTTS
-├── app.py                   # Gradio demo
-├── checkpoints/             # Best model weights per experiment
-├── onnx/                    # Exported ONNX model (exp2_model.onnx)
-├── stats/                   # JSON results + plots
-│   ├── data_analysis.json
-│   ├── exp1_results.json
-│   ├── exp2_results.json
-│   ├── exp3_results.json
-│   └── exp2_full_eval.json
-├── hinglish_eval/           # 60 synthetic Hinglish WAVs + metadata
-├── REPORT.md                # Full lab notebook report
-└── requirements.txt
+hinglish-turn-detector/
+|
+|- model.py                   # WhisperTinyTurnDetector + AttentionPooling
+|- data_prep.py               # EDA analysis and split builder
+|- train.py                   # Training loop (Experiments 1, 2, 3)
+|- eval.py                    # Test evaluation + Hinglish eval + ONNX benchmark
+|- hinglish_eval_builder.py   # Synthetic Hinglish eval set via gTTS
+|- app.py                     # Gradio interactive demo
+|- requirements.txt
+|- REPORT.md                  # Full analysis and lab report
+|
+|- stats/
+|   |- data_analysis.json         # EDA statistics (15,000-row sample)
+|   |- exp1_results.json          # Experiment 1 training summary
+|   |- exp2_results.json          # Experiment 2 training summary
+|   |- exp3_results.json          # Experiment 3 training summary
+|   |- exp2_full_eval.json        # Experiment 2 full evaluation (test + Hinglish + latency)
+|   |- exp3_full_eval.json        # Experiment 3 full evaluation
+|   |- exp2_errors.json           # Top-15 misclassified samples, Exp 2
+|   |- exp3_errors.json           # Top-15 misclassified samples, Exp 3
+|   |- plots/
+|       |- eda_summary.png        # EDA overview (6-panel figure)
+|       |- exp1_curves.png        # Exp 1 training curves
+|       |- exp2_curves.png        # Exp 2 training curves
+|       |- exp3_curves.png        # Exp 3 training curves
+|       |- exp2_test_cm.png       # Exp 2 confusion matrix (main test set)
+|       |- exp2_hinglish_cm.png   # Exp 2 confusion matrix (Hinglish set)
+|       |- exp3_test_cm.png       # Exp 3 confusion matrix (main test set)
+|       |- exp3_hinglish_cm.png   # Exp 3 confusion matrix (Hinglish set)
+|
+|- onnx/
+|   |- exp2_model.onnx            # ONNX export, Experiment 2 (best checkpoint)
+|   |- exp3_model.onnx            # ONNX export, Experiment 3
+|
+|- checkpoints/                   # Best .pt checkpoints (gitignored, large)
+|- splits/                        # Preprocessed numpy splits (gitignored, large)
+|- hinglish_eval/                 # Hinglish WAV files + metadata (WAVs gitignored)
 ```
 
 ---
 
-## Key Findings
+## Reproducibility Notes
 
-1. **Attention pooling is the decisive upgrade** — Exp1→Exp2 jumps AUROC from 0.464 to 0.862. Where you pool Whisper features matters more than how many layers you fine-tune.
+All random seeds are set to 42. Training was done on CPU with a 2,000-row subset for Exp 1 and Exp 2, and a 2,822-row hard-negative-oversampled subset for Exp 3. Full-scale training on a GPU with the complete 220,000-row dataset is expected to produce substantially better numbers.
 
-2. **The model partially learns TTS artifacts** — `midcentury_1` (real human speech) scores AUROC 0.460 (near-random). The model is not production-ready without more real-speech training data.
-
-3. **Hard-negative oversampling helps** — 3× oversampling of `midfiller=True` negatives improves val AUROC to 0.901 (Exp 3), showing that mid-utterance fillers are the main failure mode.
-
-4. **ONNX at 207ms / RTF 0.103** — comfortably real-time on a single CPU thread. The exported model is 36 KB.
-
-See [`REPORT.md`](REPORT.md) for the full analysis.
+See [REPORT.md](REPORT.md) for the full analysis.
