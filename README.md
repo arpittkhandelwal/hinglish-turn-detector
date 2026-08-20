@@ -12,9 +12,9 @@ A compact, fast model that listens to the trailing two seconds of a speaker's au
 |------------|---------------|-----------|------------|---------|----------------|-------------|
 | Exp 1 | Baseline — frozen Whisper + mean pool | 0.464 | — | — | — | — |
 | Exp 2 | + Attention pooling, top-2 blocks unfrozen | 0.930 | **0.861** | **0.791** | **0.782** | **207 ms / RTF 0.103** |
-| Exp 3 | + Hard-negative 3x oversampling | **0.901** | 0.911 | 0.863 | 0.720 | 508 ms / RTF 0.254 |
+| Exp 3 | + Hard-negative 3x oversampling | 0.901 | 0.911 | 0.863 | 0.720 | 508 ms / RTF 0.254 |
 
-Experiment 2 is selected as the production checkpoint: it achieves the best Hinglish generalisation while running at one-tenth real-time on a single CPU thread.
+Experiment 2 is the recommended checkpoint — best Hinglish generalisation, fastest inference.
 
 ---
 
@@ -31,66 +31,89 @@ Waveform (16 kHz PCM)
   -> sigmoid -> P(turn_end)
 ```
 
-- 8.26M total parameters; only 50K trainable in Exp 2 (0.61% of backbone)
+- 8.26M total parameters; 3.6M trainable in Exp 2 and 3 (43.6%)
 - Exported to ONNX (36 KB); runs at RTF 0.103 on a single CPU thread
-- No ASR, no transcript — pure acoustic signal
+- No ASR, no transcript — pure acoustics only
 
 ---
 
-## The Hinglish Problem (Honest Reporting)
+## The Hinglish Problem
 
-The training dataset (`pipecat-ai/smart-turn-data-v3.2-train`) tags 721 rows as `hin`, but inspection confirms these are 100% synthetic TTS clips from a single voice model (`chirp3_1`). No code-switched Hinglish is present.
+The training dataset tags 721 rows as `hin`, but all are synthetic TTS from a single voice model — monolingual Hindi, not code-switched Hinglish. To surface this gap honestly, we built a separate 60-clip synthetic Hinglish evaluation set (30 turn-end, 30 mid-turn) using gTTS with code-switched sentences.
 
-To surface this gap explicitly, we constructed a 60-clip synthetic Hinglish evaluation set (30 turn-end, 30 mid-turn) using gTTS with code-switched Hindi+English sentences.
+| Set | AUROC | F1 |
+|-----|-------|----|
+| Main test (in-distribution) | 0.861 | 0.791 |
+| Hinglish held-out (OOD proxy) | 0.782 | 0.789 |
+| Gap | -0.079 | -0.003 |
 
-| Evaluation Set | AUROC | F1 | Note |
-|----------------|-------|-----|------|
-| Main test set (in-distribution) | 0.861 | 0.791 | Matched training distribution |
-| Hinglish held-out (out-of-distribution) | 0.782 | 0.789 | Synthetic proxy, not gold standard |
-| Gap | -0.079 | -0.003 | Honest reporting of distribution shift |
+See [HINGLISH_EVAL.md](HINGLISH_EVAL.md) for full construction details and limitations.
 
-The AUROC drops roughly 8 points on out-of-distribution Hinglish. This is reported as-is rather than obscured.
+---
+
+## Results at a Glance
+
+### Confusion Matrices
+
+| Exp 2 — Main Test Set | Exp 2 — Hinglish Held-Out |
+|:---------------------:|:-------------------------:|
+| ![Exp 2 test confusion matrix](stats/plots/exp2_test_cm.png) | ![Exp 2 Hinglish confusion matrix](stats/plots/exp2_hinglish_cm.png) |
+
+| Exp 3 — Main Test Set | Exp 3 — Hinglish Held-Out |
+|:---------------------:|:-------------------------:|
+| ![Exp 3 test confusion matrix](stats/plots/exp3_test_cm.png) | ![Exp 3 Hinglish confusion matrix](stats/plots/exp3_hinglish_cm.png) |
+
+### Training Curves
+
+| Exp 1 | Exp 2 | Exp 3 |
+|:-----:|:-----:|:-----:|
+| ![Exp 1 training curves](stats/plots/exp1_curves.png) | ![Exp 2 training curves](stats/plots/exp2_curves.png) | ![Exp 3 training curves](stats/plots/exp3_curves.png) |
 
 ---
 
 ## Key Findings
 
-1. **Attention pooling is the decisive change.** Exp 1 to Exp 2 moves AUROC from 0.464 to 0.930 on validation without changing a single encoder weight — only the pooling strategy changes. Concentrating on prosodically salient frames near the turn boundary matters far more than the depth of fine-tuning.
+1. **Attention pooling is the decisive change.** Exp 1 to Exp 2 moves AUROC from 0.464 to 0.930 on validation — from a single architectural change in the pooling layer, not the encoder. Concentrating on prosodically salient frames at the turn boundary matters far more than uniformly averaging all frames.
 
-2. **The model partially learns TTS voice characteristics.** The `midcentury_1` source (real human speech) scores AUROC 0.460 — near random. The model is not production-ready without more real-speech training data.
+2. **The model partially learns TTS voice characteristics.** The `midcentury_1` source (real human speech) scores AUROC 0.460 on the main test set — near random. Not production-ready without more real-speech training data.
 
-3. **Hard-negative oversampling helps on mid-utterance fillers.** Exp 3 (3x oversampling of `midfiller=True` negatives) raises test AUROC to 0.911, but Hinglish AUROC drops to 0.720 — the model becomes more aggressive at predicting non-endpoints, which hurts on the Hinglish set where the decision boundary differs.
+3. **Hard-negative oversampling improves main test performance but hurts Hinglish.** Exp 3 raises test AUROC to 0.911 but drops Hinglish AUROC to 0.720. The bias-variance tradeoff does not favour Exp 3 for the target use case.
 
-4. **ONNX at 207 ms, RTF 0.103.** The exported model comfortably fits within the latency budget of a voice assistant turn-taking decision.
+4. **ONNX at 207 ms, RTF 0.103.** The exported model fits within any reasonable voice assistant latency budget, running at 10% of real-time on a single CPU thread.
 
 ---
 
 ## Quickstart
 
 ```bash
-# 1. Install dependencies
+# 1. Install
 pip install -r requirements.txt
 
-# 2. Build the synthetic Hinglish evaluation set (gTTS, ~5 min, requires internet)
-python hinglish_eval_builder.py
+# Or use Make:
+make setup
+```
 
-# 3. Analyse the dataset
-python data_prep.py --mode analyze --sample_size 15000
+```bash
+# 2. Build the synthetic Hinglish eval set (~5 min, internet required)
+make hinglish
 
-# 4. Build train / val / test splits
-python data_prep.py --mode build_splits
+# 3. Build train/val/test splits (streams from HuggingFace)
+make splits
 
-# 5. Train (three experiments)
-python train.py --experiment 1 --epochs 1
-python train.py --experiment 2 --epochs 3
-python train.py --experiment 3 --epochs 2
+# 4. Train all experiments
+make train1 train2 train3
 
-# 6. Evaluate with ONNX export and latency benchmark
-python eval.py --experiment 2 --onnx
-python eval.py --experiment 3 --onnx
+# 5. Evaluate Experiment 2 + ONNX export
+make eval2
 
-# 7. Launch the Gradio demo
-python app.py
+# 6. Interactive Gradio demo
+make demo
+```
+
+Or run the full pipeline in one go:
+
+```bash
+make all   # setup + hinglish + splits + train2 + eval2
 ```
 
 ---
@@ -100,47 +123,44 @@ python app.py
 ```
 hinglish-turn-detector/
 |
-|- model.py                   # WhisperTinyTurnDetector + AttentionPooling
-|- data_prep.py               # EDA analysis and split builder
-|- train.py                   # Training loop (Experiments 1, 2, 3)
-|- eval.py                    # Test evaluation + Hinglish eval + ONNX benchmark
-|- hinglish_eval_builder.py   # Synthetic Hinglish eval set via gTTS
-|- app.py                     # Gradio interactive demo
+|- model.py                    # WhisperTinyTurnDetector + AttentionPooling
+|- data_prep.py                # EDA analysis and split builder
+|- train.py                    # Training loop (Experiments 1, 2, 3)
+|- eval.py                     # Test eval + Hinglish eval + ONNX benchmark
+|- hinglish_eval_builder.py    # Synthetic Hinglish eval set via gTTS
+|- app.py                      # Gradio interactive demo
+|- Makefile                    # One-command workflow targets
+|- run_pipeline.sh             # End-to-end shell pipeline
 |- requirements.txt
-|- REPORT.md                  # Full analysis and lab report
+|- REPORT.md                   # Full analysis and findings
+|- HINGLISH_EVAL.md            # Hinglish eval set construction and limitations
+|
+|- notebooks/
+|   |- analysis.ipynb          # Visual walkthrough (EDA, results, error analysis)
 |
 |- stats/
-|   |- data_analysis.json         # EDA statistics (15,000-row sample)
-|   |- exp1_results.json          # Experiment 1 training summary
-|   |- exp2_results.json          # Experiment 2 training summary
-|   |- exp3_results.json          # Experiment 3 training summary
-|   |- exp2_full_eval.json        # Experiment 2 full evaluation (test + Hinglish + latency)
-|   |- exp3_full_eval.json        # Experiment 3 full evaluation
-|   |- exp2_errors.json           # Top-15 misclassified samples, Exp 2
-|   |- exp3_errors.json           # Top-15 misclassified samples, Exp 3
+|   |- data_analysis.json
+|   |- exp{1,2,3}_results.json
+|   |- exp{2,3}_full_eval.json
+|   |- exp{2,3}_errors.json
 |   |- plots/
-|       |- eda_summary.png        # EDA overview (6-panel figure)
-|       |- exp1_curves.png        # Exp 1 training curves
-|       |- exp2_curves.png        # Exp 2 training curves
-|       |- exp3_curves.png        # Exp 3 training curves
-|       |- exp2_test_cm.png       # Exp 2 confusion matrix (main test set)
-|       |- exp2_hinglish_cm.png   # Exp 2 confusion matrix (Hinglish set)
-|       |- exp3_test_cm.png       # Exp 3 confusion matrix (main test set)
-|       |- exp3_hinglish_cm.png   # Exp 3 confusion matrix (Hinglish set)
+|       |- eda_summary.png
+|       |- exp{1,2,3}_curves.png
+|       |- exp{2,3}_test_cm.png
+|       |- exp{2,3}_hinglish_cm.png
 |
 |- onnx/
-|   |- exp2_model.onnx            # ONNX export, Experiment 2 (best checkpoint)
-|   |- exp3_model.onnx            # ONNX export, Experiment 3
+|   |- exp2_model.onnx         # Best checkpoint (recommended)
+|   |- exp3_model.onnx
 |
-|- checkpoints/                   # Best .pt checkpoints (gitignored, large)
-|- splits/                        # Preprocessed numpy splits (gitignored, large)
-|- hinglish_eval/                 # Hinglish WAV files + metadata (WAVs gitignored)
+|- hinglish_eval/
+|   |- metadata.csv            # 60 Hinglish clips with labels and text
+|   |- metadata.json
+|   |- *.wav                   # gitignored — regenerate with make hinglish
 ```
 
 ---
 
-## Reproducibility Notes
+## Reproducibility
 
-All random seeds are set to 42. Training was done on CPU with a 2,000-row subset for Exp 1 and Exp 2, and a 2,822-row hard-negative-oversampled subset for Exp 3. Full-scale training on a GPU with the complete 220,000-row dataset is expected to produce substantially better numbers.
-
-See [REPORT.md](REPORT.md) for the full analysis.
+All random seeds fixed at 42. Training used ~2,000 rows on CPU; full-scale GPU training on 220k rows expected to substantially close the remaining gaps. Pre-computed stats, plots, and ONNX models are committed so results are reviewable without re-running training.
